@@ -1,11 +1,29 @@
 import types
 import inspect
+from pymonad import maybe
+from pymonad.io import IO
+from pymonad import list
+from pymonad.monad import Monad
+from pymonad.tools import curry
+from pymonad.maybe import Maybe, Just, Nothing, Option
+import operator
+from functools import lru_cache
+from functools import partial
+from oslash import Just
+from oslash import Nothing
+from oslash import list
+
+
+
+
+
+
 """*******************************************************************************"""
 # Fun_code_simple
 #
-##*  Functional programming library
+##*  Simple Functional Programming Library
 #
-#  http://www.lags.pro.br
+#  http://www.lags.dev
 #
 #  Luiz Antonio Garcia Simões (LAGS)
 #
@@ -18,7 +36,7 @@ import inspect
 
 ##
 #  id function - Return the unique first parameter
-# @author   LAGS luiz@lags.pro.br
+# @author   LAGS luiz@lags.dev
 #
 # @example id(3) => returns 3
 #
@@ -32,7 +50,7 @@ def id(x : any) -> any:
 ##
 #
 #  idCPS  function  - id function in CPS (Continuation Passing Style (CPS)
-#  @author - luiz@lags.pro.br
+#  @author - luiz@lags.dev
 #
 # @example: idCPS(3, alert)  -> shows 3
 # @param: any x (The element)
@@ -46,7 +64,7 @@ def function(x: any, cont: callable) -> callable:
 ##
 #
 #  makeTimesDo function  - Make a function to execute nTimes another function later
-#  @author - luiz@lags.pro.br
+#  @author - luiz@lags.dev
 #
 # @example: var log5times = timesDo(5, function(n) { Logger.log(n);});
 #
@@ -64,7 +82,7 @@ def makeTimesDo(f: callable) -> any:
 
 ##
 # compose function - Compose two functions
-# @author   LAGS luiz@lags.pro.br
+# @author   LAGS luiz@lags.dev
 #
 # @example:  var inc = function(a) { return a + 1 };
 #           var double = function(b) { return b + b;};
@@ -88,7 +106,7 @@ def compose(*funs) -> callable:
 
 ##
 # makeSingleton function - Use a function to generate
-# @author   LAGS luiz@lags.pro.br
+# @author   LAGS luiz@lags.dev
 #
 # @example: var
 #           def func():
@@ -111,7 +129,7 @@ def makeSingleton(f: callable) -> callable:
 
 ##
 # makeCounter function - function to generate a counter
-# @author   LAGS luiz@lags.pro.br
+# @author   LAGS luiz@lags.dev
 #
 # @param: initial - value to be incrmented
 # @param: increment - value to increment
@@ -134,8 +152,8 @@ def makeCounter(initial: int, increment: int) -> callable:
     return counter
 
 ##
-# makeMemoised function - function to make a cached function
-# @author   LAGS luiz@lags.pro.br
+# makeMemoised function - function to make a cached function -useful for 'pue functions' only
+# @author   LAGS luiz@lags.dev
 #
 # @param: fun - function to cache results
 #
@@ -165,7 +183,7 @@ def makeMemoised(func: callable) -> callable:
 
 ##
 # curry function - Make functions especialized from another by parameter fixing
-# @author   LAGS luiz@lags.pro.br
+# @author   LAGS luiz@lags.dev
 #
 # @example:  var inc = curry(
 #               function add(a,b):
@@ -186,7 +204,7 @@ def curry(func: callable, argini: any) -> callable:
 
 ##
 # curryCPS function - versão do curry para CPS (continuation)
-# @author   LAGS luiz@lags.pro.br
+# @author   LAGS luiz@lags.dev
 #
 #
 # @return {function} A modified function
@@ -199,7 +217,7 @@ def curryCPS(fun: callable , callback:callable) -> callable:
 
 ##
 # getCallerName function - get the function name of the function that call the current
-# @author   LAGS luiz@lags.pro.br
+# @author   LAGS luiz@lags.dev
 #
 #
 # @return a caller function name
@@ -211,7 +229,7 @@ def getCallerName() -> str:
 
 ##
 # getMyName function - get the name od current funcion
-# @author   LAGS luiz@lags.pro.br
+# @author   LAGS luiz@lags.dev
 #
 #
 # @return the function name
@@ -222,7 +240,7 @@ def getMyName() -> str:
 
 ##
 # getParamNames function - get the param names of a funcion
-# @author   LAGS luiz@lags.pro.br
+# @author   LAGS luiz@lags.dev
 #
 # @param: a function
 # @return a caller function name
@@ -233,7 +251,7 @@ def getParamNames(fun: callable) -> tuple:
 
 ##
 # getMyParamNames function - get the param names of a funcion
-# @author   LAGS luiz@lags.pro.br
+# @author   LAGS luiz@lags.dev
 #
 # @return a param function name
 #
@@ -245,7 +263,7 @@ def getMyParamNames() -> tuple:
 
 ##
 # makeExecuteOnce function - get the param names of a funcion
-# @author   LAGS luiz@lags.pro.br
+# @author   LAGS luiz@lags.dev
 #
 # @param: func - a function which is "excluded" after its first execution
 #
@@ -259,4 +277,73 @@ def makeExecuteOnce(fun: callable) -> callable:
         fun = lambda *args : None
         return f(*args)
     return inner_fun
+
+##
+# Z function - (Z combinator) versão do Y combinator para python
+# @author   LAGS luiz@lags.dev
+#
+# @param: func - a function which is "excluded" after its first execution
+#
+# @example: fac = lambda f: lambda n: 1 if n <= 1 else n * f(n - 1)
+#           print(Z(fac)(5))
+#
+# @return a function that can be executed (the function param, really) only one time
+#
+##
+Z = lambda f: lambda *args: f(Z(f))(*args)
+
+
+##
+# unit function - Cria uma função que devolve o valor passado
+#
+# @author   LAGS luiz@lags.dev
+#
+# @param: value - o valor que a função criada sempre retorna
+#
+# @example: func = unit("abcd")
+#           print(func())    # returns "abcd"
+#
+# @return a function that can be executed (the function param, really) only one time
+# @docs:  https://pypi.org/project/PyMonad/
+##
+def unit( value: any, fun: callable) -> callable:
+    unt = Just.unit(value)
+    result = unt >> fun
+    return result
+
+##
+# bind function - Cria uma função func applied to the parameter monadicValue
+#
+# @author   LAGS luiz@lags.dev
+#
+# @param: monadic_value - o valor a ser aplicado na função
+# @param:         func  - a função a ser aplicada no monadic_value
+#
+# @example: print(bind(3, lambda x: x +2))
+#
+# @return a function that can be executed (the function param, really) only one time
+#
+##
+def bind_list(monadic_value: list[any], func: callable) -> any:
+    ls = list(monadic_value)
+    ls.bind(lambda x: list([x, -x]))
+    return ls
+
+##
+# xxx function - xxxx
+#
+# @author   LAGS luiz@lags.dev
+#
+# @param:xxx
+
+#
+# @example: xxxx
+#
+# @return xxxx
+#
+##
+
+
+
+
 
